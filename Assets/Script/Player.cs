@@ -13,6 +13,13 @@ public class Player : MonoBehaviour
     public float xRotationMin = -90f;  // 카메라 X축 최소 회전 각도
     public float xRotationMax = 45f;   // 카메라 X축 최대 회전 각도
 
+    public float jumpHeight = 2.0f;  // 점프 높이
+    public float gravity = -9.8f;   // 중력 값
+    public float groundCheckDistance = 0.2f; // 땅과의 거리 확인
+
+    private Vector3 velocity; // 현재 속도 벡터
+    private bool isGrounded;  // 땅에 닿아 있는지 여부
+
     Animator animator;
     bool isWalk = false;
 
@@ -32,8 +39,26 @@ public class Player : MonoBehaviour
 
     void Update()
     {
+        CheckGrounded();
+
+        if (isGrounded && velocity.y < 0)
+        {
+            velocity.y = -2f; // 약간의 중력 효과를 주어 지면에 안정적으로 유지
+        }
+
         Walk();
         Rotate();
+        Jump();
+
+        // 중력 적용
+        velocity.y += gravity * Time.deltaTime;
+        characterController.Move(velocity * Time.deltaTime);
+    }
+
+    void CheckGrounded()
+    {
+        // Raycast를 사용하여 땅과의 접촉 감지
+        isGrounded = Physics.Raycast(transform.position, Vector3.down, groundCheckDistance + characterController.height / 2);
     }
 
     void Walk()
@@ -101,6 +126,14 @@ public class Player : MonoBehaviour
         xRotation -= mouseY;
         xRotation = Mathf.Clamp(xRotation, xRotationMin, xRotationMax);
         cameraTransform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
+    }
+
+    void Jump()
+    {
+        if (isGrounded && Input.GetKeyDown(KeyCode.Space))
+        {
+            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity); // 점프 속도 계산
+        }
     }
 
     public void OnFootstep()
